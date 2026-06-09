@@ -10,9 +10,8 @@ void Game::init() {
     
     generator_.DFS(graph_);
 
-    //Spawn Pacman in random node
-    std::uniform_int_distribution<int> dist(0, ROWS * COLS - 1);
-    int pacmanNode = dist(random_);
+    //Spawn Pacman in center node
+    int pacmanNode = (ROWS / 2) * COLS + (COLS / 2);
     pacman_.setNodeIndex(pacmanNode);
 
     //4 ghosts in corners, each have their own speed
