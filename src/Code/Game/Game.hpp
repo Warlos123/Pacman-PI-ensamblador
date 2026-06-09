@@ -9,10 +9,6 @@
 #include "../Ghost/Ghost.hpp"
 #include "../Constants.hpp"
 
-enum class Algorithm{ 
-    DFS, 
-    BFS 
-};
 enum class GameState{ 
     PLAYING, 
     WIN, 
@@ -36,7 +32,7 @@ private:
 
 public:
     Game();
-    void init(Algorithm a);
+    void init();
 
     bool movePacman(int targetNode);
     bool useJumpWall(int targetNode);

@@ -30,7 +30,7 @@ double Ghost::getSpeed() const{
 
 
 
-void Ghost::move(Graph& graph, Path& path, int pacmanNode) {
+void Ghost::move(Graph& graph, Path& path, int pacmanNode){
     std::vector<int> neighbors = graph.getAdj(nodeIndex_);
 
     if(neighbors.empty()) 
@@ -46,7 +46,7 @@ void Ghost::move(Graph& graph, Path& path, int pacmanNode) {
     std::uniform_int_distribution<int> dist(0, 100);
 
     //BEST PATH
-    if(dist(random_) <= GHOST_BFS_RATE) {
+    if(dist(random_) <= GHOST_BFS_RATE){
         std::vector<int> shortPath = path.getShortestPath(nodeIndex_, pacmanNode);
         if (shortPath.size() >= 2)
             nodeIndex_ = shortPath[1];

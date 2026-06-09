@@ -1,8 +1,6 @@
 #include "Pacman.hpp"
 
-Pacman::Pacman(int node, int lives) : nodeIndex_(node){
-    lives_ = PACMAN_LIVES;
-}
+Pacman::Pacman(int node, int lives) : nodeIndex_(node), score_(0), lives_(lives){}
 
 int Pacman::getNodeIndex() const{
     return nodeIndex_;
@@ -45,6 +43,6 @@ bool Pacman::removePowerUp(PowerUpType powerUp){
     return false;
 }
 
-const std::vector<PowerUpType>& Pacman::getPowerUps(){
+const std::vector<PowerUpType>& Pacman::getPowerUps() const{
     return powerUps_;
 }

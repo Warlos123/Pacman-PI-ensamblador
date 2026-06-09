@@ -25,5 +25,5 @@ public:
 
     void addPowerUp(PowerUpType powerUp);
     bool removePowerUp(PowerUpType powerUp);
-    const std::vector<PowerUpType>& getPowerUps();
+    const std::vector<PowerUpType>& getPowerUps() const;
 };
