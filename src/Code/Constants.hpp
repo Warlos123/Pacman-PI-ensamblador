@@ -26,7 +26,7 @@ constexpr int POWER_PELLET_POINTS = 50;
 constexpr int GHOST_POINTS = 200; 
 
 //GHOST
-constexpr int GHOST_BFS_RATE = 40;
+constexpr int GHOST_BFS_RATE = 80;
 
 constexpr double GHOST_SPEED_1 = 1.0;
 constexpr double GHOST_SPEED_2 = 1.0;

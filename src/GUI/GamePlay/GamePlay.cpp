@@ -3,7 +3,8 @@
 
 namespace {
     constexpr float MARGIN = 20.f;
-    constexpr int   GHOST_STEP_MS = 300; // cadencia de los fantasmas
+    constexpr int   GHOST_STEP_MS  = 300; // cadencia de los fantasmas
+    constexpr int   PACMAN_STEP_MS = 150; // cadencia de avance de Pacman
 
     const sf::Color FLOOR_COLOR(18, 18, 40);
     const sf::Color WALL_COLOR(40, 60, 200);
@@ -27,6 +28,14 @@ GamePlay::GamePlay(const sf::Font& font, unsigned int winW, unsigned int winH)
     game_.init();
     computeLayout(winW, winH);
     ghostClock_.restart();
+    pacClock_.restart();
+
+    // Estado inicial para la animacion
+    pacPrev_ = pacCur_ = game_.getPacman().getNodeIndex();
+    auto& gs = game_.getGhosts();
+    ghostPrev_.resize(gs.size());
+    for (size_t i = 0; i < gs.size(); ++i)
+        ghostPrev_[i] = gs[i].getNodeIndex();
 }
 
 void GamePlay::computeLayout(unsigned int winW, unsigned int winH){
@@ -61,6 +70,20 @@ sf::Vector2f GamePlay::nodeCenter(int node) const{
     return { tl.x + cellSize_ / 2.f, tl.y + cellSize_ / 2.f };
 }
 
+sf::Vector2f GamePlay::interpCenter(int prevNode, int curNode, float t) const{
+    sf::Vector2f a = nodeCenter(prevNode);
+    sf::Vector2f b = nodeCenter(curNode);
+
+    int dr = (prevNode / COLS) - (curNode / COLS); if (dr < 0) dr = -dr;
+    int dc = (prevNode % COLS) - (curNode % COLS); if (dc < 0) dc = -dc;
+
+    // Solo desliza entre casillas vecinas; portal/reaparicion -> salta al destino.
+    if (dr + dc != 1)
+        return b;
+
+    return { a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t };
+}
+
 void GamePlay::handleKey(sf::Keyboard::Key key, bool jumpModifier){
     if (game_.getState() != GameState::PLAYING)
         return;
@@ -73,21 +96,68 @@ void GamePlay::handleKey(sf::Keyboard::Key key, bool jumpModifier){
     else if (key == K::Right || key == K::D) dc =  1;
     else return;
 
-    int current = game_.getPacman().getNodeIndex();
-    int target  = directionToTarget(current, dr, dc);
-    if (target < 0)
+    if (jumpModifier){
+        // Shift + direccion: usa un JumpWall para cruzar una pared (una vez)
+        int current = game_.getPacman().getNodeIndex();
+        int target  = directionToTarget(current, dr, dc);
+        if (target >= 0 && game_.useJumpWall(target)){
+            curDR_ = dr; curDC_ = dc; // sigue avanzando en esa direccion
+        }
         return;
+    }
 
-    if (jumpModifier)
-        game_.useJumpWall(target);
-    else
+    // Direccion normal: solo registra la direccion deseada.
+    // El avance continuo lo hace stepPacman() en cada tick.
+    wantDR_ = dr; wantDC_ = dc;
+}
+
+void GamePlay::stepPacman(){
+    int current = game_.getPacman().getNodeIndex();
+
+    // Si hay una direccion deseada y es posible, gira hacia ella.
+    if (wantDR_ != 0 || wantDC_ != 0){
+        int t = directionToTarget(current, wantDR_, wantDC_);
+        if (t >= 0 && game_.getGraph().hasEdge(current, t)){
+            curDR_ = wantDR_; curDC_ = wantDC_;
+        }
+    }
+
+    // Todavia sin direccion: Pacman queda quieto.
+    if (curDR_ == 0 && curDC_ == 0){
+        pacPrev_ = pacCur_ = current;
+        return;
+    }
+
+    // Avanza una casilla en la direccion actual si no hay pared.
+    int target = directionToTarget(current, curDR_, curDC_);
+    if (target >= 0 && game_.getGraph().hasEdge(current, target)){
         game_.movePacman(target);
+        pacPrev_ = current;
+        pacCur_  = game_.getPacman().getNodeIndex(); // puede saltar por un portal
+    } else {
+        // Pared: se detiene y conserva su direccion.
+        pacPrev_ = pacCur_ = current;
+    }
 }
 
 void GamePlay::update(){
     if (game_.getState() != GameState::PLAYING)
         return;
+
+    // Pacman avanza solo, a su propia cadencia.
+    if (pacClock_.getElapsedTime().asMilliseconds() >= PACMAN_STEP_MS){
+        stepPacman();
+        pacClock_.restart();
+    }
+
+    if (game_.getState() != GameState::PLAYING)
+        return;
+
     if (ghostClock_.getElapsedTime().asMilliseconds() >= GHOST_STEP_MS){
+        auto& gs = game_.getGhosts();
+        ghostPrev_.resize(gs.size());
+        for (size_t i = 0; i < gs.size(); ++i)
+            ghostPrev_[i] = gs[i].getNodeIndex();
         game_.moveGhosts();
         ghostClock_.restart();
     }
@@ -181,7 +251,9 @@ void GamePlay::drawEntities(sf::RenderWindow& window){
         float r = cellSize_ * 0.36f;
         sf::CircleShape p(r);
         p.setOrigin({r, r});
-        p.setPosition(nodeCenter(game_.getPacman().getNodeIndex()));
+        float tp = std::min(1.f,
+            pacClock_.getElapsedTime().asMilliseconds() / float(PACMAN_STEP_MS));
+        p.setPosition(interpCenter(pacPrev_, pacCur_, tp));
         p.setFillColor(PACMAN_COLOR);
         window.draw(p);
     }
@@ -192,7 +264,11 @@ void GamePlay::drawEntities(sf::RenderWindow& window){
         float r = cellSize_ * 0.32f;
         sf::CircleShape gho(r);
         gho.setOrigin({r, r});
-        gho.setPosition(nodeCenter(ghosts[i].getNodeIndex()));
+        float tg = std::min(1.f,
+            ghostClock_.getElapsedTime().asMilliseconds() / float(GHOST_STEP_MS));
+        int prevNode = (i < ghostPrev_.size()) ? ghostPrev_[i]
+                                               : ghosts[i].getNodeIndex();
+        gho.setPosition(interpCenter(prevNode, ghosts[i].getNodeIndex(), tg));
         gho.setFillColor(ghosts[i].isScared() ? SCARED_COLOR : GHOST_COLORS[i % 4]);
         window.draw(gho);
     }

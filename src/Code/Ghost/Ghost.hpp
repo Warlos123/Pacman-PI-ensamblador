@@ -8,6 +8,7 @@
 class Ghost {
 private:
     int nodeIndex_;
+    int lastNode_;
     bool scared_;
     double speed_;
     std::mt19937 random_;

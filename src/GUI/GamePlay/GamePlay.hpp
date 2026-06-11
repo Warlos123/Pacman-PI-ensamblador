@@ -1,6 +1,7 @@
 #pragma once 
 #include <SFML/Graphics.hpp>
 #include <string>
+#include <vector>
 #include "../../Code/Game/Game.hpp"
 #include "../Factories/Text.hpp"
 #include "../GameState.hpp"
@@ -18,6 +19,17 @@ private:
     float hudHeight_ = 60.f;
 
     sf::Clock ghostClock_;
+    sf::Clock pacClock_;
+
+    int curDR_ = 0, curDC_ = 0;   // direccion actual de Pacman (fila, col)
+    int wantDR_ = 0, wantDC_ = 0; // ultima direccion marcada por el jugador
+
+    int pacPrev_ = 0, pacCur_ = 0;   // nodos previo/actual de Pacman (para animar)
+    std::vector<int> ghostPrev_;     // nodo previo de cada fantasma (para animar)
+
+    void stepPacman();            // avanza Pacman una casilla en su direccion
+    // posicion en pixeles interpolada entre dos nodos (t de 0 a 1)
+    sf::Vector2f interpCenter(int prevNode, int curNode, float t) const;
 
     void computeLayout(unsigned int winW, unsigned int winH);
     int  directionToTarget(int currentNode, int dRow, int dCol) const;

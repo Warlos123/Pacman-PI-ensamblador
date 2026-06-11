@@ -1,6 +1,6 @@
 #include "Ghost.hpp"
 
-Ghost::Ghost(int node, double speed) : nodeIndex_(node), scared_(false), speed_(speed){
+Ghost::Ghost(int node, double speed) : nodeIndex_(node), lastNode_(-1), scared_(false), speed_(speed){
     std::random_device rd;
     random_ = std::mt19937(rd());
 }
@@ -31,31 +31,44 @@ double Ghost::getSpeed() const{
 
 
 void Ghost::move(Graph& graph, Path& path, int pacmanNode){
-    std::vector<int> neighbors = graph.getAdj(nodeIndex_);
+    const std::vector<int>& neighbors = graph.getAdj(nodeIndex_);
 
-    if(neighbors.empty()) 
+    if(neighbors.empty())
         return;
 
+    // Elige un vecino al azar evitando devolverse por donde vino
+    // (salvo que sea la unica salida). Asi no tiembla en un punto.
+    auto pickRandom = [&](const std::vector<int>& opts) -> int {
+        std::vector<int> filtered;
+        for(int n : opts)
+            if(n != lastNode_) filtered.push_back(n);
+        const std::vector<int>& pool = filtered.empty() ? opts : filtered;
+        std::uniform_int_distribution<int> d(0, (int)pool.size() - 1);
+        return pool[d(random_)];
+    };
 
+    int from = nodeIndex_;
+
+    //ASUSTADO: huye al azar
     if(scared_){
-        std::uniform_int_distribution<int> dist(0, neighbors.size() - 1);
-        nodeIndex_ = neighbors[dist(random_)];
+        nodeIndex_ = pickRandom(neighbors);
+        lastNode_ = from;
         return;
     }
 
-    std::uniform_int_distribution<int> dist(0, 100);
-
-    //BEST PATH
-    if(dist(random_) <= GHOST_BFS_RATE){
+    //PERSECUCION: la mayoria de las veces persigue con BFS hacia Pacman
+    std::uniform_int_distribution<int> dice(0, 100);
+    if(dice(random_) <= GHOST_BFS_RATE){
         std::vector<int> shortPath = path.getShortestPath(nodeIndex_, pacmanNode);
-        if (shortPath.size() >= 2)
+        if(shortPath.size() >= 2){
             nodeIndex_ = shortPath[1];
-    } 
-
-    //RANDOM PATH
-    else{
-        std::uniform_int_distribution<int> dist(0, neighbors.size() - 1);
-        nodeIndex_ = neighbors[dist(random_)];
+            lastNode_ = from;
+            return;
+        }
     }
+
+    //Si no persigue (o no hay camino), se mueve al azar sin devolverse
+    nodeIndex_ = pickRandom(neighbors);
+    lastNode_ = from;
 }
   
