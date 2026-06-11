@@ -20,6 +20,7 @@ private:
 
     sf::Clock ghostClock_;
     sf::Clock pacClock_;
+    sf::Clock animClock_;
 
     int curDR_ = 0, curDC_ = 0;   // direccion actual de Pacman (fila, col)
     int wantDR_ = 0, wantDC_ = 0; // ultima direccion marcada por el jugador
@@ -27,7 +28,12 @@ private:
     int pacPrev_ = 0, pacCur_ = 0;   // nodos previo/actual de Pacman (para animar)
     std::vector<int> ghostPrev_;     // nodo previo de cada fantasma (para animar)
 
+    bool      dying_ = false;        // animacion de muerte en curso
+    sf::Clock deathClock_;
+    int       deathNode_ = 0;        // donde murio Pacman
+
     void stepPacman();            // avanza Pacman una casilla en su direccion
+    void respawnAfterDeath();     // reubica Pacman y fantasmas tras morir
     // posicion en pixeles interpolada entre dos nodos (t de 0 a 1)
     sf::Vector2f interpCenter(int prevNode, int curNode, float t) const;
 

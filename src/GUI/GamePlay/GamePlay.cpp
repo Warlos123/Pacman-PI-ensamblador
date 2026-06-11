@@ -1,5 +1,7 @@
 #include "GamePlay.hpp"
 #include <algorithm>
+#include "../Factories/PacmanSprite.hpp"
+#include "../Factories/GhostSprite.hpp"
 
 namespace {
     constexpr float MARGIN = 20.f;
@@ -16,11 +18,13 @@ namespace {
     const sf::Color SCARED_COLOR(40, 70, 255);
 
     const sf::Color GHOST_COLORS[4] = {
-        sf::Color(230, 50, 50),
-        sf::Color(255, 150, 220),
-        sf::Color(0, 220, 230),
-        sf::Color(255, 165, 60)
+        sf::Color(255,   0,   0), // Blinky - rojo
+        sf::Color(255, 184, 255), // Pinky  - rosado
+        sf::Color(0,   255, 255), // Inky   - cyan
+        sf::Color(255, 184,  82)  // Clyde  - naranja
     };
+
+    constexpr int DEATH_MS = 1100; // duracion de la animacion de muerte
 }
 
 GamePlay::GamePlay(const sf::Font& font, unsigned int winW, unsigned int winH)
@@ -141,17 +145,27 @@ void GamePlay::stepPacman(){
 }
 
 void GamePlay::update(){
+    // Durante la muerte, todo se congela hasta que termina la animacion.
+    if (dying_){
+        if (deathClock_.getElapsedTime().asMilliseconds() >= DEATH_MS){
+            dying_ = false;
+            if (game_.getPacman().getLives() > 0)
+                respawnAfterDeath();
+            // si no quedan vidas, al salir getState() devolvera LOSE
+        }
+        return;
+    }
+
     if (game_.getState() != GameState::PLAYING)
         return;
+
+    int livesBefore = game_.getPacman().getLives();
 
     // Pacman avanza solo, a su propia cadencia.
     if (pacClock_.getElapsedTime().asMilliseconds() >= PACMAN_STEP_MS){
         stepPacman();
         pacClock_.restart();
     }
-
-    if (game_.getState() != GameState::PLAYING)
-        return;
 
     if (ghostClock_.getElapsedTime().asMilliseconds() >= GHOST_STEP_MS){
         auto& gs = game_.getGhosts();
@@ -161,10 +175,28 @@ void GamePlay::update(){
         game_.moveGhosts();
         ghostClock_.restart();
     }
+
+    // Si Pacman perdio una vida en este paso, arranca la animacion de muerte.
+    if (game_.getPacman().getLives() < livesBefore){
+        dying_ = true;
+        deathClock_.restart();
+        deathNode_ = game_.getPacman().getNodeIndex();
+    }
 }
 
 void GamePlay::draw(sf::RenderWindow& window){
     drawMaze(window);
+
+    if (dying_){
+        // Animacion de muerte: solo Pacman abriendo la boca, sin fantasmas.
+        float prog = std::min(1.f,
+            deathClock_.getElapsedTime().asMilliseconds() / float(DEATH_MS));
+        float r = cellSize_ * 0.42f;
+        PacmanSprite::drawDying(window, nodeCenter(deathNode_), r, prog);
+        drawHUD(window);
+        return;
+    }
+
     drawEntities(window);
     drawHUD(window);
 }
@@ -248,29 +280,45 @@ void GamePlay::drawEntities(sf::RenderWindow& window){
 
     // Pacman
     {
-        float r = cellSize_ * 0.36f;
-        sf::CircleShape p(r);
-        p.setOrigin({r, r});
+        float r = cellSize_ * 0.42f;
         float tp = std::min(1.f,
             pacClock_.getElapsedTime().asMilliseconds() / float(PACMAN_STEP_MS));
-        p.setPosition(interpCenter(pacPrev_, pacCur_, tp));
-        p.setFillColor(PACMAN_COLOR);
-        window.draw(p);
+        sf::Vector2f pos = interpCenter(pacPrev_, pacCur_, tp);
+        bool moving = (pacPrev_ != pacCur_);
+        int fdr = curDR_, fdc = curDC_;
+        if (fdr == 0 && fdc == 0) fdc = 1; // por defecto mira a la derecha
+        PacmanSprite::draw(window, pos, r, fdr, fdc, moving,
+                           animClock_.getElapsedTime().asSeconds(), PACMAN_COLOR);
     }
 
     // Fantasmas
     auto& ghosts = game_.getGhosts();
+    int pacNode = game_.getPacman().getNodeIndex();
     for (size_t i = 0; i < ghosts.size(); i++){
-        float r = cellSize_ * 0.32f;
-        sf::CircleShape gho(r);
-        gho.setOrigin({r, r});
+        float r = cellSize_ * 0.40f;
         float tg = std::min(1.f,
             ghostClock_.getElapsedTime().asMilliseconds() / float(GHOST_STEP_MS));
-        int prevNode = (i < ghostPrev_.size()) ? ghostPrev_[i]
-                                               : ghosts[i].getNodeIndex();
-        gho.setPosition(interpCenter(prevNode, ghosts[i].getNodeIndex(), tg));
-        gho.setFillColor(ghosts[i].isScared() ? SCARED_COLOR : GHOST_COLORS[i % 4]);
-        window.draw(gho);
+        int curNode  = ghosts[i].getNodeIndex();
+        int prevNode = (i < ghostPrev_.size()) ? ghostPrev_[i] : curNode;
+        sf::Vector2f pos = interpCenter(prevNode, curNode, tg);
+
+        // Mirada: hacia donde se mueve; si esta quieto, hacia Pacman.
+        int lookDx = (curNode % COLS) - (prevNode % COLS);
+        int lookDy = (curNode / COLS) - (prevNode / COLS);
+        if (lookDx == 0 && lookDy == 0){
+            int ddx = (pacNode % COLS) - (curNode % COLS);
+            int ddy = (pacNode / COLS) - (curNode / COLS);
+            int adx = ddx < 0 ? -ddx : ddx;
+            int ady = ddy < 0 ? -ddy : ddy;
+            if (adx >= ady){ lookDx = (ddx > 0) - (ddx < 0); lookDy = 0; }
+            else           { lookDy = (ddy > 0) - (ddy < 0); lookDx = 0; }
+        } else {
+            lookDx = (lookDx > 0) - (lookDx < 0);
+            lookDy = (lookDy > 0) - (lookDy < 0);
+        }
+
+        sf::Color col = ghosts[i].isScared() ? SCARED_COLOR : GHOST_COLORS[i % 4];
+        GhostSprite::draw(window, pos, r, col, lookDx, lookDy, ghosts[i].isScared());
     }
 }
 
@@ -284,9 +332,33 @@ void GamePlay::drawHUD(sf::RenderWindow& window){
 }
 
 GameState GamePlay::getState() const{
+    if (dying_)
+        return GameState::PLAYING; // no cambiar de pantalla durante la muerte
     return game_.getState();
 }
 
 int GamePlay::getScore(){
     return game_.getPacman().getScore();
+}
+
+void GamePlay::respawnAfterDeath(){
+    int center = (ROWS / 2) * COLS + (COLS / 2);
+    game_.getPacman().setNodeIndex(center);
+
+    auto& gs = game_.getGhosts();
+    int corners[4] = { 0, COLS - 1, (ROWS - 1) * COLS, (ROWS - 1) * COLS + COLS - 1 };
+    for (size_t i = 0; i < gs.size(); ++i){
+        gs[i].setNodeIndex(corners[i % 4]);
+        gs[i].setScared(false);
+    }
+
+    curDR_ = curDC_ = 0;
+    wantDR_ = wantDC_ = 0;
+    pacPrev_ = pacCur_ = center;
+    ghostPrev_.resize(gs.size());
+    for (size_t i = 0; i < gs.size(); ++i)
+        ghostPrev_[i] = gs[i].getNodeIndex();
+
+    pacClock_.restart();
+    ghostClock_.restart();
 }
