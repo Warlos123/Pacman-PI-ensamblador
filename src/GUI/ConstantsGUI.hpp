@@ -13,8 +13,8 @@ namespace Constants{
 
     inline const sf::Color TEXTCOLOR = sf::Color::White;
 
-    inline sf::Font    font{"./GUI/Resource/PAC-FONT.TTF"};
-    inline sf::Texture backGround{"./GUI/Resource/MainScreen.png"};
+    inline sf::Font    font{"./Resource/PAC-FONT.TTF"};
+    inline sf::Texture backGround{"./Resource/MainScreen.png"};
 
     
 

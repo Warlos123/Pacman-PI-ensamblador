@@ -5,7 +5,7 @@ constexpr int ROWS = 10;
 constexpr int COLS = 20;
 
 //MAZE
-constexpr int EXTRA_EDGE_PROB = 5; //Out of 100
+constexpr int EXTRA_EDGE_PROB = 10; //Out of 100
 
 //POWER_UPS
 constexpr int POWER_SPAWN_RATE = 8; //Out of 100, per cell
