@@ -9,6 +9,7 @@ g++ -std=c++17 -Wall ^
     src\Code\Game\Game.cpp ^
     src\GUI\GamePlay\GamePlay.cpp ^
     src\GUI\window.cpp ^
+    src\GUI\SerialReader.cpp
     -I src ^
     -o src\GUI\pacman ^
     -lsfml-graphics -lsfml-window -lsfml-system
