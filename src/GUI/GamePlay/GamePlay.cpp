@@ -159,6 +159,9 @@ void GamePlay::update(){
     if (game_.getState() != GameState::PLAYING)
         return;
 
+
+    applyJoystick();
+        
     int livesBefore = game_.getPacman().getLives();
 
     // Pacman avanza solo, a su propia cadencia.
@@ -362,3 +365,16 @@ void GamePlay::respawnAfterDeath(){
     pacClock_.restart();
     ghostClock_.restart();
 }
+
+
+void GamePlay::applyJoystick() {
+    if (!joystick_.isConnected())
+        return;
+
+    char dir = joystick_.getDirection();
+    if      (dir == 'U') { wantDR_ = -1; wantDC_ =  0; }
+    else if (dir == 'D') { wantDR_ =  1; wantDC_ =  0; }
+    else if (dir == 'L') { wantDR_ =  0; wantDC_ = -1; }
+    else if (dir == 'R') { wantDR_ =  0; wantDC_ =  1; }
+}
+

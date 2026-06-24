@@ -10,6 +10,7 @@
 
 class GamePlay {
 private:
+    SerialReader joystick_{"COM3"}; //Puerto
     const sf::Font& font_;
     Game game_;
 
