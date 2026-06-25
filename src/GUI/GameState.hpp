@@ -3,7 +3,6 @@
 
 enum class ScreenState{
     MAINSCREEN,
-    ALGO_SELECT,
     PLAYING,
     VICTORY
 };
