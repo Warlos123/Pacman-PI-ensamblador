@@ -56,4 +56,5 @@ public:
 
     GameState getState() const;
     int getScore();
+    void applyJoystick();
 };
