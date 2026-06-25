@@ -6,6 +6,7 @@
 #include "../Factories/Text.hpp"
 #include "../GameState.hpp"
 #include "../ConstantsGUI.hpp"
+#include "../SerialReader.hpp"
 
 
 class GamePlay {
