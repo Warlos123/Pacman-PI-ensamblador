@@ -7,7 +7,7 @@ Game::Game() : graph_(ROWS, COLS), path_(graph_), pacman_(0,PACMAN_LIVES), state
 
 
 void Game::init() {
-    
+
     generator_.DFS(graph_);
 
     //Spawn Pacman in center node
@@ -56,8 +56,8 @@ void Game::populate(const std::unordered_set<int>& reserved){
         if (rateDist(random_) <= POWER_PELLET_SPAWN_RATE){
             cell.powerUp = PowerUpType::POWER_PELLET;
             cell.hasPellet = false;
-        } 
-        
+        }
+
         else if (rateDist(random_) <= POWER_SPAWN_RATE){
             cell.powerUp = PowerUpType::JUMP_WALL;
             cell.hasPellet = false;
@@ -75,7 +75,7 @@ void Game::populate(const std::unordered_set<int>& reserved){
     }
 
     for (int p = 0; p < PORTAL_PAIRS; p++){
-        if (freeCells.size() < 2) 
+        if (freeCells.size() < 2)
             break;
 
         std::uniform_int_distribution<int> pick(0, freeCells.size() - 1);
@@ -92,10 +92,10 @@ void Game::populate(const std::unordered_set<int>& reserved){
 
         Cell& ca = graph_.getCell(a);
         Cell& cb = graph_.getCell(b);
-        ca.isPortal = true; 
+        ca.isPortal = true;
         ca.portalTarget = b;
         ca.hasPellet = false;
-        cb.isPortal = true; 
+        cb.isPortal = true;
         cb.portalTarget = a;
         cb.hasPellet = false;
     }
@@ -137,6 +137,7 @@ bool Game::movePacman(int targetNode){
             ghost.setScared(true);
         }
         pacman_.addScore(POWER_PELLET_POINTS);
+        powerPelletEaten_ = true;
         cell.powerUp = PowerUpType::NONE;
     }
 
@@ -146,7 +147,7 @@ bool Game::movePacman(int targetNode){
     }
 
     checkGhostCollision();
-    
+
     return true;
 }
 
@@ -160,26 +161,12 @@ void Game::checkGhostCollision(){
                 pacman_.addScore(GHOST_POINTS);
                 ghosts_[i].setScared(false);
 
-                //Return ghost to its spawn point.
-                if (i == 0){
-                    ghosts_[i].setNodeIndex(0);
-                }
-
-                else if (i == 1){
-                    ghosts_[i].setNodeIndex(COLS - 1);
-                }
-
-                else if (i == 2){ 
-                    ghosts_[i].setNodeIndex((ROWS - 1) * COLS);
-                }
-
-                else{
-                    ghosts_[i].setNodeIndex((ROWS - 1) * COLS + COLS - 1);
-                }            
+                // Al ser comido, el fantasma reaparece en el centro (como la casa de fantasmas).
+                ghosts_[i].setNodeIndex((ROWS / 2) * COLS + (COLS / 2));
 
 
-            } 
-                
+            }
+
             else{ //Pacman CAN'T eat ghosts, lose life
                 pacman_.loseLife();
                 if(pacman_.getLives() == 0)
@@ -231,4 +218,10 @@ std::vector<Ghost>& Game::getGhosts(){
 
 Graph& Game::getGraph(){
     return graph_;
+}
+
+bool Game::consumePowerPelletEaten(){
+    bool v = powerPelletEaten_;
+    powerPelletEaten_ = false;
+    return v;
 }

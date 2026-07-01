@@ -2,7 +2,14 @@
 
 SerialReader::SerialReader(const std::string& port){
     std::string fullPort = "\\\\.\\" + port; // necesario para COM10+
-    handle_ = CreateFileA(fullPort.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, 0, nullptr);
+    // Reintenta si el puerto esta ocupado (p.ej. al reiniciar partida, cuando el
+    // SerialReader anterior aun no libera el COM). No reintenta si el puerto no existe.
+    for (int intento = 0; intento < 10; ++intento){
+        handle_ = CreateFileA(fullPort.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, 0, nullptr);
+        if (handle_ != INVALID_HANDLE_VALUE) break;
+        if (GetLastError() != ERROR_ACCESS_DENIED) break;
+        Sleep(50);
+    }
 
     if (handle_ == INVALID_HANDLE_VALUE)
         return;

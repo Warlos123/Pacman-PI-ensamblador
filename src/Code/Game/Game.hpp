@@ -26,6 +26,7 @@ private:
     GameState state_;
     int pelletsRemaining_;
     std::mt19937 random_;
+    bool powerPelletEaten_ = false;
 
     void populate(const std::unordered_set<int>& reserved);
     void checkGhostCollision();
@@ -42,4 +43,5 @@ public:
     Pacman& getPacman();
     std::vector<Ghost>& getGhosts();
     Graph& getGraph();
+    bool consumePowerPelletEaten();
 };

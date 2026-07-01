@@ -51,6 +51,7 @@ public:
 
 private:
     void startGame(){
+        gamePlay.reset(); // libera el SerialReader (y el puerto COM) del juego anterior antes de crear el nuevo
         gamePlay = std::make_unique<GamePlay>(Constants::font, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT);
         state = ScreenState::PLAYING;
     }

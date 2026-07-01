@@ -5,8 +5,8 @@
 
 namespace {
     constexpr float MARGIN = 20.f;
-    constexpr int   GHOST_STEP_MS  = 300; // cadencia de los fantasmas
-    constexpr int   PACMAN_STEP_MS = 150; // cadencia de avance de Pacman
+    constexpr int   GHOST_STEP_MS  = 400; // cadencia de los fantasmas
+    constexpr int   PACMAN_STEP_MS = 200; // cadencia de avance de Pacman
 
     const sf::Color FLOOR_COLOR(18, 18, 40);
     const sf::Color WALL_COLOR(40, 60, 200);
@@ -24,6 +24,8 @@ namespace {
         sf::Color(255, 184,  82)  // Clyde  - naranja
     };
 
+    constexpr int FRIGHT_BLUE_MS  = 10000; // 10s en azul
+    constexpr int FRIGHT_BLINK_MS = 3000;  // 3s parpadeando antes de volver
     constexpr int DEATH_MS = 1100; // duracion de la animacion de muerte
 }
 
@@ -168,6 +170,17 @@ void GamePlay::update(){
     if (pacClock_.getElapsedTime().asMilliseconds() >= PACMAN_STEP_MS){
         stepPacman();
         pacClock_.restart();
+    }
+
+    // Modo asustado: arranca al comer el quesito grande; dura 10s azul + 3s de parpadeo.
+    if (game_.consumePowerPelletEaten()){
+        frightActive_ = true;
+        frightClock_.restart();
+    }
+    if (frightActive_ && frightClock_.getElapsedTime().asMilliseconds() >= FRIGHT_BLUE_MS + FRIGHT_BLINK_MS){
+        for (auto& g : game_.getGhosts())
+            g.setScared(false);
+        frightActive_ = false;
     }
 
     if (ghostClock_.getElapsedTime().asMilliseconds() >= GHOST_STEP_MS){
@@ -320,8 +333,15 @@ void GamePlay::drawEntities(sf::RenderWindow& window){
             lookDy = (lookDy > 0) - (lookDy < 0);
         }
 
-        sf::Color col = ghosts[i].isScared() ? SCARED_COLOR : GHOST_COLORS[i % 4];
-        GhostSprite::draw(window, pos, r, col, lookDx, lookDy, ghosts[i].isScared());
+        // Parpadeo en los ultimos 3s: alterna azul <-> color normal cada 200ms.
+        bool drawScared = ghosts[i].isScared();
+        if (drawScared && frightActive_){
+            int el = frightClock_.getElapsedTime().asMilliseconds();
+            if (el >= FRIGHT_BLUE_MS)
+                drawScared = (((el - FRIGHT_BLUE_MS) / 200) % 2 == 0);
+        }
+        sf::Color col = drawScared ? SCARED_COLOR : GHOST_COLORS[i % 4];
+        GhostSprite::draw(window, pos, r, col, lookDx, lookDy, drawScared);
     }
 }
 
@@ -332,6 +352,37 @@ void GamePlay::drawHUD(sf::RenderWindow& window){
                     + "    JumpWall: " + std::to_string(p.getPowerUps().size());
     Text text(font_, hud, 24, {originX_, 15.f}, sf::Color::White);
     text.draw(window);
+
+    // Indicador de direccion del joystick: brujula de flechas que se ilumina en
+    // la direccion que el joystick esta mandando (solo si el joystick esta conectado).
+    if (joystick_.isConnected()){
+        char jdir = joystick_.getDirection();
+        const sf::Color ON (255, 235, 0);
+        const sf::Color OFF(70, 70, 85);
+        float cx = static_cast<float>(Constants::WINDOW_WIDTH) - 55.f;
+        float cy = 30.f;
+        float g  = 16.f;
+        float s  = 7.f;
+
+        Text lbl(font_, "Joystick", 16, {cx - 165.f, 20.f}, sf::Color(180, 180, 190));
+        lbl.draw(window);
+
+        auto arrow = [&](float ax, float ay, sf::Vector2f a, sf::Vector2f b, sf::Vector2f c, bool on){
+            sf::ConvexShape tri;
+            tri.setPointCount(3);
+            tri.setPoint(0, a);
+            tri.setPoint(1, b);
+            tri.setPoint(2, c);
+            tri.setPosition({ax, ay});
+            tri.setFillColor(on ? ON : OFF);
+            window.draw(tri);
+        };
+
+        arrow(cx,     cy - g, { 0.f, -s}, {-s,  s}, { s,  s}, jdir == 'U');
+        arrow(cx,     cy + g, { 0.f,  s}, {-s, -s}, { s, -s}, jdir == 'D');
+        arrow(cx - g, cy,     {-s,  0.f}, { s, -s}, { s,  s}, jdir == 'L');
+        arrow(cx + g, cy,     { s,  0.f}, {-s, -s}, {-s,  s}, jdir == 'R');
+    }
 }
 
 GameState GamePlay::getState() const{
@@ -354,6 +405,7 @@ void GamePlay::respawnAfterDeath(){
         gs[i].setNodeIndex(corners[i % 4]);
         gs[i].setScared(false);
     }
+    frightActive_ = false;
 
     curDR_ = curDC_ = 0;
     wantDR_ = wantDC_ = 0;

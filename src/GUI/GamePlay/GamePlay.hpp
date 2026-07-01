@@ -23,6 +23,8 @@ private:
     sf::Clock ghostClock_;
     sf::Clock pacClock_;
     sf::Clock animClock_;
+    sf::Clock frightClock_;          // cronometro del modo asustado
+    bool      frightActive_ = false; // modo asustado con temporizador activo
 
     int curDR_ = 0, curDC_ = 0;   // direccion actual de Pacman (fila, col)
     int wantDR_ = 0, wantDC_ = 0; // ultima direccion marcada por el jugador
