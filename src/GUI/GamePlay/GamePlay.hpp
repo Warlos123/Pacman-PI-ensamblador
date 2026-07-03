@@ -33,6 +33,8 @@ private:
     std::vector<int> ghostPrev_;     // nodo previo de cada fantasma (para animar)
 
     bool      dying_ = false;        // animacion de muerte en curso
+    bool introActive_ = true;
+
     sf::Clock deathClock_;
     int       deathNode_ = 0;        // donde murio Pacman
 
@@ -61,4 +63,6 @@ public:
     int getScore();
     void applyJoystick();
     void triggerJump();
+    void updateGhostSound();
+    void stopGhostSound(); 
 };

@@ -125,6 +125,7 @@ bool Game::movePacman(int targetNode){
         cell.hasPellet = false;
         pacman_.addScore(PELLET_POINTS);
         pelletsRemaining_--;
+        pelletEaten_ = true;
 
         if(pelletsRemaining_ == 0){
             state_ = GameState::WIN;
@@ -145,6 +146,7 @@ bool Game::movePacman(int targetNode){
 
     else if(cell.powerUp == PowerUpType::JUMP_WALL){
         pacman_.addPowerUp(PowerUpType::JUMP_WALL);
+        jumpWallEaten_ = true;
         cell.powerUp = PowerUpType::NONE;
     }
 
@@ -163,6 +165,7 @@ void Game::checkGhostCollision(){
         if (ghosts_[i].isScared()){ //Pacman CAN eat ghosts
             pacman_.addScore(GHOST_POINTS);
             ghosts_[i].setScared(false);
+            ghostEaten_ = true;
 
             // Al ser comido, el fantasma reaparece en el centro (como la casa de fantasmas).
             ghosts_[i].setNodeIndex((ROWS / 2) * COLS + (COLS / 2));
@@ -229,5 +232,26 @@ Graph& Game::getGraph(){
 bool Game::consumePowerPelletEaten(){
     bool v = powerPelletEaten_;
     powerPelletEaten_ = false;
+    return v;
+}
+
+
+bool Game::consumePelletEaten(){
+    bool v = pelletEaten_;
+    pelletEaten_ = false;
+    return v;
+}
+
+
+bool Game::consumeJumpWallEaten(){
+    bool v = jumpWallEaten_;
+    jumpWallEaten_ = false;
+    return v;
+}
+
+
+bool Game::consumeGhostEaten(){
+    bool v = ghostEaten_;
+    ghostEaten_ = false;
     return v;
 }

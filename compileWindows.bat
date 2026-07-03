@@ -12,7 +12,7 @@ g++ -std=c++17 -Wall ^
     src\GUI\asm\int_to_string.o ^
     -I src ^
     -o src\GUI\pacman ^
-    -lsfml-graphics -lsfml-window -lsfml-system
+    -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio
 
 if %errorlevel% neq 0 (
     pause

@@ -33,7 +33,7 @@ namespace {
     constexpr int PORTAL_COLOR_COUNT = sizeof(PORTAL_COLORS) / sizeof(PORTAL_COLORS[0]);
 
 
-    constexpr int FRIGHT_BLUE_MS  = 10000; // 10s en azul
+    constexpr int FRIGHT_BLUE_MS  = 5000; // 10s en azul
     constexpr int FRIGHT_BLINK_MS = 3000;  // 3s parpadeando antes de volver
     constexpr int DEATH_MS = 1100; // duracion de la animacion de muerte
 }
@@ -51,6 +51,8 @@ GamePlay::GamePlay(const sf::Font& font, unsigned int winW, unsigned int winH)
     ghostPrev_.resize(gs.size());
     for (size_t i = 0; i < gs.size(); ++i)
         ghostPrev_[i] = gs[i].getNodeIndex();
+
+    Constants::introMusic.play();
 }
 
 void GamePlay::computeLayout(unsigned int winW, unsigned int winH){
@@ -100,7 +102,7 @@ sf::Vector2f GamePlay::interpCenter(int prevNode, int curNode, float t) const{
 }
 
 void GamePlay::handleKey(sf::Keyboard::Key key, bool jumpModifier){
-    if (game_.getState() != GameState::PLAYING)
+    if (game_.getState() != GameState::PLAYING || introActive_)
         return;
 
     using K = sf::Keyboard::Key;
@@ -156,20 +158,31 @@ void GamePlay::stepPacman(){
 }
 
 void GamePlay::update(){
+    // Mientras suena la intro, nada se mueve.
+    if (introActive_){
+        if (Constants::introMusic.getStatus() != sf::Music::Status::Playing)
+            introActive_ = false;
+        return;
+    }
+
+
     // Durante la muerte, todo se congela hasta que termina la animacion.
     if (dying_){
-        if (deathClock_.getElapsedTime().asMilliseconds() >= DEATH_MS){
+        bool animDone  = deathClock_.getElapsedTime().asMilliseconds() >= DEATH_MS;
+        bool soundDone = Constants::deathSound.getStatus() != sf::Sound::Status::Playing;
+        if (animDone && soundDone){
             dying_ = false;
             if (game_.getPacman().getLives() > 0)
-                respawnAfterDeath();
-            // si no quedan vidas, al salir getState() devolvera LOSE
+                respawnAfterDeath(); // si no quedan vidas, al salir getState() devolvera LOSE
         }
         return;
     }
 
-    if (game_.getState() != GameState::PLAYING)
+    if (game_.getState() != GameState::PLAYING){
+        stopGhostSound();
         return;
-
+    }
+    
 
     applyJoystick();
         
@@ -179,18 +192,27 @@ void GamePlay::update(){
     if (pacClock_.getElapsedTime().asMilliseconds() >= PACMAN_STEP_MS){
         stepPacman();
         pacClock_.restart();
-    }
 
-    // Modo asustado: arranca al comer el quesito grande; dura 10s azul + 3s de parpadeo.
+        if (game_.consumePelletEaten())
+            Constants::playWaka();
+        if (game_.consumeJumpWallEaten())
+            Constants::playWaka();
+    }
+    
+
+    // Modo asustado: arranca al comer el powerPellet; dura 10s azul + 3s de parpadeo.
     if (game_.consumePowerPelletEaten()){
         frightActive_ = true;
         frightClock_.restart();
+        Constants::playWaka();
     }
     if (frightActive_ && frightClock_.getElapsedTime().asMilliseconds() >= FRIGHT_BLUE_MS + FRIGHT_BLINK_MS){
         for (auto& g : game_.getGhosts())
             g.setScared(false);
         frightActive_ = false;
     }
+
+    updateGhostSound();
 
     if (ghostClock_.getElapsedTime().asMilliseconds() >= GHOST_STEP_MS){
         auto& gs = game_.getGhosts();
@@ -201,11 +223,18 @@ void GamePlay::update(){
         ghostClock_.restart();
     }
 
+
+    if (game_.consumeGhostEaten())
+        Constants::playGhostEaten();
+
+
     // Si Pacman perdio una vida en este paso, arranca la animacion de muerte.
     if (game_.getPacman().getLives() < livesBefore){
         dying_ = true;
         deathClock_.restart();
         deathNode_ = game_.getPacman().getNodeIndex();
+        stopGhostSound();
+        Constants::deathSound.play();
     }
 }
 
@@ -488,7 +517,7 @@ void GamePlay::applyJoystick() {
 
 
 void GamePlay::triggerJump(){
-    if (game_.getState() != GameState::PLAYING)
+    if (game_.getState() != GameState::PLAYING || introActive_)
         return;
 
     int dr = curDR_, dc = curDC_;
@@ -507,4 +536,28 @@ void GamePlay::triggerJump(){
         pacCur_  = game_.getPacman().getNodeIndex();
         pacClock_.restart();
     }
+}
+
+
+void GamePlay::updateGhostSound(){
+    if (frightActive_){
+        if (Constants::ghostMoveSound.getStatus() == sf::Sound::Status::Playing)
+            Constants::ghostMoveSound.stop();
+        if (Constants::ghostScaredSound.getStatus() != sf::Sound::Status::Playing)
+            Constants::ghostScaredSound.play();
+    } 
+    
+    else {
+        if (Constants::ghostScaredSound.getStatus() == sf::Sound::Status::Playing)
+            Constants::ghostScaredSound.stop();
+        if (Constants::ghostMoveSound.getStatus() != sf::Sound::Status::Playing)
+            Constants::ghostMoveSound.play();
+    }
+}
+
+
+
+void GamePlay::stopGhostSound(){
+    Constants::ghostMoveSound.stop();
+    Constants::ghostScaredSound.stop();
 }
