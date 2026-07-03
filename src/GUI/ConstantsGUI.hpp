@@ -15,7 +15,7 @@ namespace Constants{
 
     inline sf::Font    font{"./Resource/PAC-FONT.TTF"};
     inline sf::Texture backGround{"./Resource/MainScreen.png"};
-
+    inline sf::Font hudFont{"./Resource/HUD-FONT.ttf"};
     
 
     

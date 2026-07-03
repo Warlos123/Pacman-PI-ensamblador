@@ -347,11 +347,26 @@ void GamePlay::drawEntities(sf::RenderWindow& window){
 
 void GamePlay::drawHUD(sf::RenderWindow& window){
     Pacman& p = game_.getPacman();
-    std::string hud = "Score: " + std::to_string(p.getScore())
-                    + "    Vidas: " + std::to_string(p.getLives())
-                    + "    JumpWall: " + std::to_string(p.getPowerUps().size());
-    Text text(font_, hud, 24, {originX_, 15.f}, sf::Color::White);
-    text.draw(window);
+    
+    constexpr float Y = 15.f;
+    float x = originX_;
+
+    Text scoreLbl(font_, "SCORE:", 24, {x, Y}, sf::Color::White);
+    scoreLbl.draw(window);
+    Text scoreVal(Constants::hudFont, std::to_string(p.getScore()), 18, {x + 130.f, Y + 4.f}, sf::Color::White);
+    scoreVal.draw(window);
+    x += 260.f;
+
+    Text livesLbl(font_, "VIDAS:", 24, {x, Y}, sf::Color::White);
+    livesLbl.draw(window);
+    Text livesVal(Constants::hudFont, std::to_string(p.getLives()), 18, {x + 120.f, Y + 4.f}, sf::Color::White);
+    livesVal.draw(window);
+    x += 260.f;
+
+    Text jwLbl(font_, "JUMPWALL:", 24, {x, Y}, sf::Color::White);
+    jwLbl.draw(window);
+    Text jwVal(Constants::hudFont, std::to_string(p.getPowerUps().size()), 18, {x + 190.f, Y + 4.f}, sf::Color::White);
+    jwVal.draw(window);
 
     // Indicador de direccion del joystick: brujula de flechas que se ilumina en
     // la direccion que el joystick esta mandando (solo si el joystick esta conectado).
@@ -430,3 +445,25 @@ void GamePlay::applyJoystick() {
     else if (dir == 'R') { wantDR_ =  0; wantDC_ =  1; }
 }
 
+
+void GamePlay::triggerJump(){
+    if (game_.getState() != GameState::PLAYING)
+        return;
+
+    int dr = curDR_, dc = curDC_;
+    if (dr == 0 && dc == 0){ dr = wantDR_; dc = wantDC_; }
+    if (dr == 0 && dc == 0)
+        return;
+
+    int current = game_.getPacman().getNodeIndex();
+    int target  = directionToTarget(current, dr, dc);
+    if (target < 0)
+        return;
+
+    if (game_.useJumpWall(target)){
+        curDR_ = dr; curDC_ = dc;
+        pacPrev_ = current;
+        pacCur_  = game_.getPacman().getNodeIndex();
+        pacClock_.restart();
+    }
+}

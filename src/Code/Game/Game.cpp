@@ -155,24 +155,25 @@ bool Game::movePacman(int targetNode){
 
 void Game::checkGhostCollision(){
     for (int i = 0; i < ghosts_.size(); i++) {
-        if (ghosts_[i].getNodeIndex() == pacman_.getNodeIndex()){ //Pacman and ghost is in same index.
+        if (ghosts_[i].getNodeIndex() != pacman_.getNodeIndex()) //Ghost no esta en la celda de Pacman
+            continue;
 
-            if (ghosts_[i].isScared()){ //Pacman CAN eat ghosts
-                pacman_.addScore(GHOST_POINTS);
-                ghosts_[i].setScared(false);
+        if (ghosts_[i].isScared()){ //Pacman CAN eat ghosts
+            pacman_.addScore(GHOST_POINTS);
+            ghosts_[i].setScared(false);
 
-                // Al ser comido, el fantasma reaparece en el centro (como la casa de fantasmas).
-                ghosts_[i].setNodeIndex((ROWS / 2) * COLS + (COLS / 2));
+            // Al ser comido, el fantasma reaparece en el centro (como la casa de fantasmas).
+            ghosts_[i].setNodeIndex((ROWS / 2) * COLS + (COLS / 2));
 
-
-            }
-
-            else{ //Pacman CAN'T eat ghosts, lose life
-                pacman_.loseLife();
-                if(pacman_.getLives() == 0)
-                state_ = GameState::LOSE;
-            }
+            continue;
         }
+
+        //Pacman CAN'T eat ghosts, lose life
+        pacman_.loseLife();
+        if(pacman_.getLives() == 0)
+            state_ = GameState::LOSE;
+            
+        return;
     }
 }
 
@@ -187,6 +188,9 @@ bool Game::useJumpWall(int targetNode){
     if (it == gridNeighbors.end())
         return false;
 
+    if(graph_.hasEdge(pacman_.getNodeIndex(), targetNode))
+        return false;
+        
     pacman_.setNodeIndex(targetNode);
     pacman_.removePowerUp(PowerUpType::JUMP_WALL);
     checkGhostCollision();
@@ -198,8 +202,8 @@ bool Game::useJumpWall(int targetNode){
 void Game::moveGhosts(){
     for(auto& ghost : ghosts_){
         ghost.move(graph_, path_, pacman_.getNodeIndex());
-        checkGhostCollision();
     }
+    checkGhostCollision();
 }
 
 
