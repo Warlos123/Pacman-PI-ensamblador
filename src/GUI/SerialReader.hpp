@@ -12,11 +12,14 @@ public:
     char getDirection() const; //ARRIBA, ABAJO, IZQUIERDA, DERECHA, NEUTRO
     bool isConnected() const;
 
+    bool joystickButtonPress();
+
 private:
     void readLoop();
 
     HANDLE handle_ = INVALID_HANDLE_VALUE;
     std::atomic<char> dir_ {'N'};
+    std::atomic<bool> btnEvent_ {false};
     std::atomic<bool> running_ {false};
     std::thread thread_;
 };

@@ -1,9 +1,8 @@
 #include "SerialReader.hpp"
 
 SerialReader::SerialReader(const std::string& port){
-    std::string fullPort = "\\\\.\\" + port; // necesario para COM10+
-    // Reintenta si el puerto esta ocupado (p.ej. al reiniciar partida, cuando el
-    // SerialReader anterior aun no libera el COM). No reintenta si el puerto no existe.
+    std::string fullPort = "\\\\.\\" + port; 
+    
     for (int intento = 0; intento < 10; ++intento){
         handle_ = CreateFileA(fullPort.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, 0, nullptr);
         if (handle_ != INVALID_HANDLE_VALUE) break;
@@ -24,9 +23,9 @@ SerialReader::SerialReader(const std::string& port){
     SetCommState(handle_, &dcb);
 
     COMMTIMEOUTS timeouts = {};
-    timeouts.ReadIntervalTimeout         = 50;
-    timeouts.ReadTotalTimeoutConstant    = 50;
-    timeouts.ReadTotalTimeoutMultiplier  = 10;
+    timeouts.ReadIntervalTimeout = 50;
+    timeouts.ReadTotalTimeoutConstant = 50;
+    timeouts.ReadTotalTimeoutMultiplier = 10;
     SetCommTimeouts(handle_, &timeouts);
 
     running_ = true;
@@ -49,13 +48,30 @@ bool SerialReader::isConnected() const {
     return handle_ != INVALID_HANDLE_VALUE;
 }
 
+bool SerialReader::joystickButtonPress() {
+    return btnEvent_.exchange(false);
+}
+
 void SerialReader::readLoop() {
     char buf;
     DWORD read;
+    bool btnDown = false;
     while (running_){
         if (ReadFile(handle_, &buf, 1, &read, nullptr) && read == 1) {
             if (buf == 'U' || buf == 'D' || buf == 'L' || buf == 'R' || buf == 'N')
                 dir_.store(buf);
+
+            else if(buf == 'B'){
+                if(!btnDown){
+                    btnEvent_.store(true);
+                }
+
+                btnDown = true;
+            }
+
+            else if(buf == 'b'){
+                btnDown = false;
+            }
         }
     }
 }

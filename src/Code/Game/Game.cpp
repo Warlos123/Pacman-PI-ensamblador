@@ -94,9 +94,11 @@ void Game::populate(const std::unordered_set<int>& reserved){
         Cell& cb = graph_.getCell(b);
         ca.isPortal = true;
         ca.portalTarget = b;
+        ca.portalId = p;
         ca.hasPellet = false;
         cb.isPortal = true;
         cb.portalTarget = a;
+        cb.portalId = p;
         cb.hasPellet = false;
     }
 }

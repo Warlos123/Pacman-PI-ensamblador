@@ -34,4 +34,13 @@ class Text{
             });
             text.setPosition(point);
         }
+
+        float getWidth() const{        
+            return text.getLocalBounds().size.x;
+        }
+ 
+        void setPosition(sf::Vector2f pos){
+            text.setPosition(pos);
+        }
+
 };

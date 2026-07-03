@@ -8,8 +8,9 @@ struct Cell{
     PowerUpType powerUp;
     bool isPortal;
     int portalTarget;
+    int portalId; 
     bool hasPellet;
-
+ 
     Cell() : row(0), col(0), powerUp(PowerUpType::NONE), isPortal(false), portalTarget(-1), hasPellet(true) {}
     
 };

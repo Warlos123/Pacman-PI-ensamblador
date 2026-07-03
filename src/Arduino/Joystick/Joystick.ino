@@ -1,9 +1,11 @@
 const int VRX = A0;
 const int VRY = A1;
+const int SW_PIN = 2;
 const int DEADZONE = 200; // 0-1023, centro = 512
 
 void setup() {
     Serial.begin(9600);
+    pinMode(SW_PIN, INPUT_PULLUP);
 }
 
 void loop() {
@@ -23,6 +25,9 @@ void loop() {
         else if (dy < -DEADZONE) dir = 'U';
     }
 
+    bool pressed = (digitalRead(SW_PIN) == LOW); //LOW = presionado
+
     Serial.write(dir);
-    delay(50); // ~20 Hz, más que suficiente para PACMAN_STEP_MS=150
+    Serial.write(pressed ? 'B' : 'b');
+    delay(50);\
 }

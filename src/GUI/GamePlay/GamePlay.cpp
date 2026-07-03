@@ -13,7 +13,6 @@ namespace {
     const sf::Color PELLET_COLOR(250, 230, 180);
     const sf::Color POWER_PELLET_COLOR(255, 170, 60);
     const sf::Color JUMP_WALL_COLOR(80, 230, 120);
-    const sf::Color PORTAL_COLOR(200, 80, 230);
     const sf::Color PACMAN_COLOR(255, 235, 0);
     const sf::Color SCARED_COLOR(40, 70, 255);
 
@@ -23,6 +22,14 @@ namespace {
         sf::Color(0,   255, 255), // Inky   - cyan
         sf::Color(255, 184,  82)  // Clyde  - naranja
     };
+
+
+    const sf::Color PORTAL_COLORS[] = {
+        sf::Color(160,  60, 220),//morado
+        sf::Color( 60, 220, 100)//verde
+    };
+    constexpr int PORTAL_COLOR_COUNT = sizeof(PORTAL_COLORS) / sizeof(PORTAL_COLORS[0]);
+
 
     constexpr int FRIGHT_BLUE_MS  = 10000; // 10s en azul
     constexpr int FRIGHT_BLINK_MS = 3000;  // 3s parpadeando antes de volver
@@ -268,7 +275,7 @@ void GamePlay::drawEntities(sf::RenderWindow& window){
             ring.setPosition(c);
             ring.setFillColor(sf::Color::Transparent);
             ring.setOutlineThickness(std::max(2.f, cellSize_ * 0.08f));
-            ring.setOutlineColor(PORTAL_COLOR);
+            ring.setOutlineColor(PORTAL_COLORS[cell.portalId % PORTAL_COLOR_COUNT]);
             window.draw(ring);
         }
         else if (cell.powerUp == PowerUpType::POWER_PELLET){
@@ -438,11 +445,24 @@ void GamePlay::applyJoystick() {
     if (!joystick_.isConnected())
         return;
 
+    int dr = 0, dc = 0;
     char dir = joystick_.getDirection();
     if      (dir == 'U') { wantDR_ = -1; wantDC_ =  0; }
     else if (dir == 'D') { wantDR_ =  1; wantDC_ =  0; }
     else if (dir == 'L') { wantDR_ =  0; wantDC_ = -1; }
     else if (dir == 'R') { wantDR_ =  0; wantDC_ =  1; }
+
+
+     if (joystick_.joystickButtonPress() && (dr != 0 || dc != 0)){
+        int current = game_.getPacman().getNodeIndex();
+        int target  = directionToTarget(current, dr, dc);
+        if (target >= 0 && game_.useJumpWall(target)){
+            curDR_ = dr; curDC_ = dc;
+        }
+        return; //el salto cambio a Pacman, no cambiar direccion wantDR_/wantDC_ en este frame
+    }
+
+    wantDR_ = dr; wantDC_ = dc;
 }
 
 

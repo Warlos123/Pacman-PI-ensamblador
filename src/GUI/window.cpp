@@ -113,19 +113,29 @@ private:
     }
 
     void drawVictory(){
-        if(gamePlay) gamePlay->draw(window);
+     if(gamePlay) gamePlay->draw(window);
         bool win = gamePlay && gamePlay->getState() == GameState::WIN;
+        sf::Color resultColor = win ? sf::Color::Green : sf::Color::Red;
 
-        Text result(Constants::font,
-            std::string(win ? WIN_TEXT : LOSE_TEXT) + "  Score: "
-            + std::to_string(gamePlay ? gamePlay->getScore() : 0),
-            END_SIZE, {0.f, 0.f}, win ? sf::Color::Green : sf::Color::Red);
-        result.centerX(Constants::WINDOW_WIDTH, CENTER_Y - RESULT_OFF);
+        //Se dibuja el texto con PAC-FONT y el score con HUD-FONT
+        std::string label    = std::string(win ? WIN_TEXT : LOSE_TEXT) + "  Score: ";
+        std::string scoreStr = std::to_string(gamePlay ? gamePlay->getScore() : 0);
+
+        Text labelText(Constants::font,    label,    END_SIZE, {0.f, 0.f}, resultColor);
+        Text scoreText(Constants::hudFont, scoreStr, END_SIZE, {0.f, 0.f}, resultColor);
+
+        float totalWidth = labelText.getWidth() + scoreText.getWidth();
+        float startX = (Constants::WINDOW_WIDTH - totalWidth) / 2.f;
+        float y = CENTER_Y - RESULT_OFF;
+
+        labelText.setPosition({startX, y});
+        scoreText.setPosition({startX + labelText.getWidth(), y});
 
         Text hint(Constants::font, HINT_TEXT, HINT_SIZE, {0.f, 0.f}, sf::Color::White);
         hint.centerX(Constants::WINDOW_WIDTH, CENTER_Y + HINT_OFF);
 
-        result.draw(window);
+        labelText.draw(window);
+        scoreText.draw(window);
         hint.draw(window);
     }
 };
