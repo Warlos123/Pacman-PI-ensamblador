@@ -3,6 +3,8 @@
 #include "../Factories/PacmanSprite.hpp"
 #include "../Factories/GhostSprite.hpp"
 
+extern "C" int int_to_string_asm(int value, char* buffer);
+
 namespace {
     constexpr float MARGIN = 20.f;
     constexpr int   GHOST_STEP_MS  = 400; // cadencia de los fantasmas
@@ -352,6 +354,16 @@ void GamePlay::drawEntities(sf::RenderWindow& window){
     }
 }
 
+
+
+static void drawHudNumber(sf::RenderWindow& window, int value, sf::Vector2f pos){
+    char buffer[12];
+    int_to_string_asm(value, buffer);
+    Text val(Constants::hudFont, buffer, 18, pos, sf::Color::White);
+    val.draw(window);
+}
+
+
 void GamePlay::drawHUD(sf::RenderWindow& window){
     Pacman& p = game_.getPacman();
     
@@ -360,20 +372,29 @@ void GamePlay::drawHUD(sf::RenderWindow& window){
 
     Text scoreLbl(font_, "SCORE:", 24, {x, Y}, sf::Color::White);
     scoreLbl.draw(window);
-    Text scoreVal(Constants::hudFont, std::to_string(p.getScore()), 18, {x + 130.f, Y + 4.f}, sf::Color::White);
-    scoreVal.draw(window);
+    
+    //Text scoreVal(Constants::hudFont, std::to_string(p.getScore()), 18, {x + 130.f, Y + 4.f}, sf::Color::White);     //VERSION C++
+    //scoreVal.draw(window);                                                                                          //VERSION C++
+
+    drawHudNumber(window, p.getScore(), {x + 130.f, Y + 4.f}); //VERSION ASM
     x += 260.f;
 
     Text livesLbl(font_, "VIDAS:", 24, {x, Y}, sf::Color::White);
     livesLbl.draw(window);
-    Text livesVal(Constants::hudFont, std::to_string(p.getLives()), 18, {x + 120.f, Y + 4.f}, sf::Color::White);
-    livesVal.draw(window);
+
+    //Text livesVal(Constants::hudFont, std::to_string(p.getLives()), 18, {x + 120.f, Y + 4.f}, sf::Color::White);  //VERSION C++
+    //livesVal.draw(window);                                                                                       //VERSION C++
+
+    drawHudNumber(window, p.getLives(), {x + 120.f, Y + 4.f}); //VERSION ASM
     x += 260.f;
 
     Text jwLbl(font_, "JUMPWALL:", 24, {x, Y}, sf::Color::White);
     jwLbl.draw(window);
-    Text jwVal(Constants::hudFont, std::to_string(p.getPowerUps().size()), 18, {x + 190.f, Y + 4.f}, sf::Color::White);
-    jwVal.draw(window);
+    //Text jwVal(Constants::hudFont, std::to_string(p.getPowerUps().size()), 18, {x + 190.f, Y + 4.f}, sf::Color::White);   //VERSION C++
+    //jwVal.draw(window);                                                                                                  //VERSION C++
+
+    drawHudNumber(window, static_cast<int>(p.getPowerUps().size()), {x + 190.f, Y + 4.f}); //VERSION ASM
+
 
     // Indicador de direccion del joystick: brujula de flechas que se ilumina en
     // la direccion que el joystick esta mandando (solo si el joystick esta conectado).
