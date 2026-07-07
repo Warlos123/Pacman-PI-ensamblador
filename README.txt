@@ -11,6 +11,7 @@ PACMAN
 pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-sfml
 •This will install g++ compiler and SFML.
 •Add "C:\msys64\mingw64\bin" to your Windows PATH (Environment Variables).
+•If you're having issues with compiling make sure this path is first in the list of any other msys64 paths.
 •Once done, close and reopen any CMD windows so the PATH updates.
 
 ##COMPILE AND RUN##
