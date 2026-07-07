@@ -2,3 +2,4 @@ pacman.exe
 *.exe
 package-lock.json
 build/
+scores.txt

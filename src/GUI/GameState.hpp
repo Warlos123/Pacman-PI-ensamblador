@@ -4,6 +4,6 @@
 enum class ScreenState{
     MAINSCREEN,
     PLAYING,
-    VICTORY
+    GAMEOVER
 };
 

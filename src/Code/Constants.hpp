@@ -10,6 +10,8 @@ constexpr int EXTRA_EDGE_PROB = 10; //Out of 100
 //POWER_UPS
 constexpr int POWER_SPAWN_RATE = 8; //Out of 100, per cell
 constexpr int POWER_PELLET_SPAWN_RATE = 10; //Out of 100, per cell
+constexpr int MAX_POWER_PELLETS = 10; //Max per map
+constexpr int MAX_JUMP_WALLS    = 10; //Max per map
 
 enum class PowerUpType{
     NONE,
@@ -26,7 +28,7 @@ constexpr int POWER_PELLET_POINTS = 50;
 constexpr int GHOST_POINTS = 200; 
 
 //GHOST
-constexpr int GHOST_BFS_RATE = 80;
+constexpr int GHOST_BFS_RATE = 50; //Out of 100
 
 constexpr double GHOST_SPEED_1 = 1.0;
 constexpr double GHOST_SPEED_2 = 1.0;

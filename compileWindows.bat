@@ -19,6 +19,7 @@ g++ -std=c++17 -Wall ^
     src\GUI\GamePlay\GamePlay.cpp ^
     src\GUI\window.cpp ^
     src\GUI\SerialReader.cpp ^
+    src\GUI\Scoreboard\Scoreboard.cpp ^
     src\GUI\asm\int_to_string.o ^
     -I src ^
     -I "%SFML_INC%" ^

@@ -399,30 +399,30 @@ void GamePlay::drawHUD(sf::RenderWindow& window){
     constexpr float Y = 15.f;
     float x = originX_;
 
-    Text scoreLbl(font_, "SCORE:", 24, {x, Y}, sf::Color::White);
+    Text scoreLbl(Constants::hudFont, "SCORE:", 24, {x, Y}, sf::Color::White);
     scoreLbl.draw(window);
     
     //Text scoreVal(Constants::hudFont, std::to_string(p.getScore()), 18, {x + 130.f, Y + 4.f}, sf::Color::White);     //VERSION C++
     //scoreVal.draw(window);                                                                                          //VERSION C++
 
-    drawHudNumber(window, p.getScore(), {x + 130.f, Y + 4.f}); //VERSION ASM
+    drawHudNumber(window, p.getScore(), {x + 150.f, Y + 3.f}); //VERSION ASM
     x += 260.f;
 
-    Text livesLbl(font_, "VIDAS:", 24, {x, Y}, sf::Color::White);
+    Text livesLbl(Constants::hudFont, "VIDAS:", 24, {x, Y}, sf::Color::White);
     livesLbl.draw(window);
 
     //Text livesVal(Constants::hudFont, std::to_string(p.getLives()), 18, {x + 120.f, Y + 4.f}, sf::Color::White);  //VERSION C++
     //livesVal.draw(window);                                                                                       //VERSION C++
 
-    drawHudNumber(window, p.getLives(), {x + 120.f, Y + 4.f}); //VERSION ASM
+    drawHudNumber(window, p.getLives(), {x + 150.f, Y + 3.f}); //VERSION ASM
     x += 260.f;
 
-    Text jwLbl(font_, "JUMPWALL:", 24, {x, Y}, sf::Color::White);
+    Text jwLbl(Constants::hudFont, "JUMPWALL:", 24, {x, Y}, sf::Color::White);
     jwLbl.draw(window);
     //Text jwVal(Constants::hudFont, std::to_string(p.getPowerUps().size()), 18, {x + 190.f, Y + 4.f}, sf::Color::White);   //VERSION C++
     //jwVal.draw(window);                                                                                                  //VERSION C++
 
-    drawHudNumber(window, static_cast<int>(p.getPowerUps().size()), {x + 190.f, Y + 4.f}); //VERSION ASM
+    drawHudNumber(window, static_cast<int>(p.getPowerUps().size()), {x + 230.f, Y + 3.f}); //VERSION ASM
 
 
     // Indicador de direccion del joystick: brujula de flechas que se ilumina en
@@ -540,7 +540,16 @@ void GamePlay::triggerJump(){
 
 
 void GamePlay::updateGhostSound(){
-    if (frightActive_){
+
+    bool anyFrightened = false;
+
+    for(auto& g :  game_.getGhosts()){
+        if(g.isScared()){
+            anyFrightened = true;
+            break;
+        }
+    }
+    if (anyFrightened){
         if (Constants::ghostMoveSound.getStatus() == sf::Sound::Status::Playing)
             Constants::ghostMoveSound.stop();
         if (Constants::ghostScaredSound.getStatus() != sf::Sound::Status::Playing)

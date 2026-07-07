@@ -41,8 +41,8 @@ void Game::init() {
 void Game::populate(const std::unordered_set<int>& reserved){
     int total = ROWS * COLS;
 
-    std::uniform_int_distribution<int> rateDist(1, 100);
-
+    std::vector<int> candidates;
+    candidates.reserve(total);
     for (int i = 0; i < total; i++){
         Cell& cell = graph_.getCell(i);
 
@@ -52,15 +52,30 @@ void Game::populate(const std::unordered_set<int>& reserved){
         }
 
         cell.hasPellet = true;
+        candidates.push_back(i);
+    }
 
-        if (rateDist(random_) <= POWER_PELLET_SPAWN_RATE){
+    //Baraja para que los power-ups queden repartidos por todo el mapa.
+    std::shuffle(candidates.begin(), candidates.end(), random_);
+
+    std::uniform_int_distribution<int> rateDist(1, 100);
+    int powerPelletCount = 0;
+    int jumpWallCount    = 0;
+
+    for (int i : candidates){
+        Cell& cell = graph_.getCell(i);
+
+
+        if (powerPelletCount < MAX_POWER_PELLETS && rateDist(random_) <= POWER_PELLET_SPAWN_RATE){
             cell.powerUp = PowerUpType::POWER_PELLET;
             cell.hasPellet = false;
+            powerPelletCount++;
         }
 
-        else if (rateDist(random_) <= POWER_SPAWN_RATE){
+        else if (jumpWallCount < MAX_JUMP_WALLS && rateDist(random_) <= POWER_SPAWN_RATE){
             cell.powerUp = PowerUpType::JUMP_WALL;
             cell.hasPellet = false;
+            jumpWallCount++;
         }
     }
 
