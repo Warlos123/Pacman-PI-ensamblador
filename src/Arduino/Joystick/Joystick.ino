@@ -29,5 +29,5 @@ void loop() {
 
     Serial.write(dir);
     Serial.write(pressed ? 'B' : 'b');
-    delay(50);\
+    delay(50);
 }

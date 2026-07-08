@@ -18,7 +18,13 @@ private:
     float cellSize_  = 0.f;
     float originX_   = 0.f;
     float originY_   = 0.f;
-    float hudHeight_ = 60.f;
+    float hudHeight_    = 72.f;
+    float footerHeight_ = 48.f;  
+    int   highScore_    = 0;
+
+    bool ending_ = false; //congelamiento
+    sf::Clock endClock_;
+    
 
     sf::Clock ghostClock_;
     sf::Clock pacClock_;
@@ -53,7 +59,7 @@ private:
     void drawHUD(sf::RenderWindow& window);
 
 public:
-    GamePlay(const sf::Font& font, unsigned int winW, unsigned int winH);
+    GamePlay(const sf::Font& font, unsigned int winW, unsigned int winH, int highScore = 0);
 
     void handleKey(sf::Keyboard::Key key, bool jumpModifier);
     void update();
@@ -65,4 +71,5 @@ public:
     void triggerJump();
     void updateGhostSound();
     void stopGhostSound(); 
+    void beginEnding();
 };

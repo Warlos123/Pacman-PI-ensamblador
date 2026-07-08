@@ -9,6 +9,7 @@ namespace {
     constexpr float MARGIN = 20.f;
     constexpr int   GHOST_STEP_MS  = 400; // cadencia de los fantasmas
     constexpr int   PACMAN_STEP_MS = 200; // cadencia de avance de Pacman
+    constexpr int END_HOLD_MS = 1800; //congelamiento
 
     const sf::Color FLOOR_COLOR(18, 18, 40);
     const sf::Color WALL_COLOR(40, 60, 200);
@@ -38,8 +39,9 @@ namespace {
     constexpr int DEATH_MS = 1100; // duracion de la animacion de muerte
 }
 
-GamePlay::GamePlay(const sf::Font& font, unsigned int winW, unsigned int winH)
+GamePlay::GamePlay(const sf::Font& font, unsigned int winW, unsigned int winH, int highScore)
     : font_(font) {
+    highScore_ = highScore;
     game_.init();
     computeLayout(winW, winH);
     ghostClock_.restart();
@@ -57,13 +59,13 @@ GamePlay::GamePlay(const sf::Font& font, unsigned int winW, unsigned int winH)
 
 void GamePlay::computeLayout(unsigned int winW, unsigned int winH){
     float availW = static_cast<float>(winW) - 2.f * MARGIN;
-    float availH = static_cast<float>(winH) - hudHeight_ - 2.f * MARGIN;
+    float availH = static_cast<float>(winH) - hudHeight_ - footerHeight_ - 2.f * MARGIN;
     cellSize_ = std::min(availW / COLS, availH / ROWS);
 
     float gridW = cellSize_ * COLS;
     float gridH = cellSize_ * ROWS;
     originX_ = (static_cast<float>(winW) - gridW) / 2.f;
-    originY_ = hudHeight_ + (static_cast<float>(winH) - hudHeight_ - gridH) / 2.f;
+    originY_ = hudHeight_ + (static_cast<float>(winH) - hudHeight_ - footerHeight_ - gridH) / 2.f;
 }
 
 int GamePlay::directionToTarget(int currentNode, int dRow, int dCol) const{
@@ -165,6 +167,9 @@ void GamePlay::update(){
         return;
     }
 
+    //Congelamiento
+     if (ending_)
+        return;
 
     // Durante la muerte, todo se congela hasta que termina la animacion.
     if (dying_){
@@ -174,16 +179,13 @@ void GamePlay::update(){
             dying_ = false;
             if (game_.getPacman().getLives() > 0)
                 respawnAfterDeath(); // si no quedan vidas, al salir getState() devolvera LOSE
+
+            else
+                beginEnding();
         }
         return;
     }
-
-    if (game_.getState() != GameState::PLAYING){
-        stopGhostSound();
-        return;
-    }
     
-
     applyJoystick();
         
     int livesBefore = game_.getPacman().getLives();
@@ -236,6 +238,9 @@ void GamePlay::update(){
         stopGhostSound();
         Constants::deathSound.play();
     }
+
+     if (game_.getState() != GameState::PLAYING && !dying_)
+        beginEnding();
 }
 
 void GamePlay::draw(sf::RenderWindow& window){
@@ -247,6 +252,12 @@ void GamePlay::draw(sf::RenderWindow& window){
             deathClock_.getElapsedTime().asMilliseconds() / float(DEATH_MS));
         float r = cellSize_ * 0.42f;
         PacmanSprite::drawDying(window, nodeCenter(deathNode_), r, prog);
+        drawHUD(window);
+        return;
+    }
+
+    //congelamiento
+    if (ending_ && game_.getState() == GameState::LOSE){
         drawHUD(window);
         return;
     }
@@ -385,48 +396,50 @@ void GamePlay::drawEntities(sf::RenderWindow& window){
 
 
 
-static void drawHudNumber(sf::RenderWindow& window, int value, sf::Vector2f pos){
-    char buffer[12];
-    int_to_string_asm(value, buffer);
-    Text val(Constants::hudFont, buffer, 18, pos, sf::Color::White);
-    val.draw(window);
-}
-
-
 void GamePlay::drawHUD(sf::RenderWindow& window){
     Pacman& p = game_.getPacman();
-    
-    constexpr float Y = 15.f;
-    float x = originX_;
+    const float W = static_cast<float>(Constants::WINDOW_WIDTH);
+    const float H = static_cast<float>(Constants::WINDOW_HEIGHT);
 
-    Text scoreLbl(Constants::hudFont, "SCORE:", 24, {x, Y}, sf::Color::White);
-    scoreLbl.draw(window);
-    
-    //Text scoreVal(Constants::hudFont, std::to_string(p.getScore()), 18, {x + 130.f, Y + 4.f}, sf::Color::White);     //VERSION C++
-    //scoreVal.draw(window);                                                                                          //VERSION C++
+    const sf::Color LABEL_COLOR(255, 255, 255);
+    const sf::Color VALUE_COLOR(255, 235, 0);
 
-    drawHudNumber(window, p.getScore(), {x + 150.f, Y + 3.f}); //VERSION ASM
-    x += 260.f;
+    //HIGH SCORE
+    int shownHigh = std::max(highScore_, p.getScore());
 
-    Text livesLbl(Constants::hudFont, "VIDAS:", 24, {x, Y}, sf::Color::White);
-    livesLbl.draw(window);
+    Text hsLabel(Constants::hudFont, "HIGH SCORE", 22, {0.f, 0.f}, LABEL_COLOR);
+    hsLabel.centerX(Constants::WINDOW_WIDTH, 8.f);
+    hsLabel.draw(window);
+    {
+        char buf[12];
+        int_to_string_asm(shownHigh, buf);
+        Text hsVal(Constants::hudFont, buf, 30, {0.f, 0.f}, VALUE_COLOR);
+        hsVal.centerX(Constants::WINDOW_WIDTH, 34.f);
+        hsVal.draw(window);
+    }
 
-    //Text livesVal(Constants::hudFont, std::to_string(p.getLives()), 18, {x + 120.f, Y + 4.f}, sf::Color::White);  //VERSION C++
-    //livesVal.draw(window);                                                                                       //VERSION C++
+    //SCORE / VIDAS / JUMPWALL
+    auto drawStat = [&](const std::string& label, int value, float colCenter, float y){
+        char buf[12];
+        int_to_string_asm(value, buf); 
+        Text lbl(Constants::hudFont, label, 24, {0.f, 0.f}, LABEL_COLOR);
+        Text val(Constants::hudFont, buf,   24, {0.f, 0.f}, VALUE_COLOR);
+        const float gap = 10.f;
+        float total = lbl.getWidth() + gap + val.getWidth();
+        float x = colCenter - total / 2.f;     
+        lbl.setPosition({x, y});
+        val.setPosition({x + lbl.getWidth() + gap, y});
+        lbl.draw(window);
+        val.draw(window);
+    };
 
-    drawHudNumber(window, p.getLives(), {x + 150.f, Y + 3.f}); //VERSION ASM
-    x += 260.f;
+    float thirdW = W / 3.f;
+    float statY  = H - footerHeight_ + 8.f;
+    drawStat("SCORE", p.getScore(), thirdW * 0.5f, statY);
+    drawStat("VIDAS", p.getLives(), thirdW * 1.5f, statY);
+    drawStat("JUMPWALL", static_cast<int>(p.getPowerUps().size()), thirdW * 2.5f, statY);
 
-    Text jwLbl(Constants::hudFont, "JUMPWALL:", 24, {x, Y}, sf::Color::White);
-    jwLbl.draw(window);
-    //Text jwVal(Constants::hudFont, std::to_string(p.getPowerUps().size()), 18, {x + 190.f, Y + 4.f}, sf::Color::White);   //VERSION C++
-    //jwVal.draw(window);                                                                                                  //VERSION C++
-
-    drawHudNumber(window, static_cast<int>(p.getPowerUps().size()), {x + 230.f, Y + 3.f}); //VERSION ASM
-
-
-    // Indicador de direccion del joystick: brujula de flechas que se ilumina en
-    // la direccion que el joystick esta mandando (solo si el joystick esta conectado).
+    //JOYSTICK
     if (joystick_.isConnected()){
         char jdir = joystick_.getDirection();
         const sf::Color ON (255, 235, 0);
@@ -460,6 +473,23 @@ void GamePlay::drawHUD(sf::RenderWindow& window){
 GameState GamePlay::getState() const{
     if (dying_)
         return GameState::PLAYING; // no cambiar de pantalla durante la muerte
+
+    if (ending_){
+        bool underMin = endClock_.getElapsedTime().asMilliseconds() < END_HOLD_MS;
+
+        //WIN
+        if (game_.getState() == GameState::WIN){
+            bool soundPlaying = Constants::victorySound.getStatus() == sf::Sound::Status::Playing;
+            if (soundPlaying || underMin)
+                return GameState::PLAYING;
+        }
+
+        //LOST
+        else if (underMin){
+            return GameState::PLAYING;
+        }
+    }
+
     return game_.getState();
 }
 
@@ -497,19 +527,18 @@ void GamePlay::applyJoystick() {
 
     int dr = 0, dc = 0;
     char dir = joystick_.getDirection();
-    if      (dir == 'U') { wantDR_ = -1; wantDC_ =  0; }
-    else if (dir == 'D') { wantDR_ =  1; wantDC_ =  0; }
-    else if (dir == 'L') { wantDR_ =  0; wantDC_ = -1; }
-    else if (dir == 'R') { wantDR_ =  0; wantDC_ =  1; }
+    if      (dir == 'U') { dr = -1; dc =  0; }
+    else if (dir == 'D') { dr =  1; dc =  0; }
+    else if (dir == 'L') { dr =  0; dc = -1; }
+    else if (dir == 'R') { dr =  0; dc =  1; }
 
-
-     if (joystick_.joystickButtonPress() && (dr != 0 || dc != 0)){
+    if (joystick_.joystickButtonPress() && (dr != 0 || dc != 0)){
         int current = game_.getPacman().getNodeIndex();
         int target  = directionToTarget(current, dr, dc);
         if (target >= 0 && game_.useJumpWall(target)){
             curDR_ = dr; curDC_ = dc;
         }
-        return; //el salto cambio a Pacman, no cambiar direccion wantDR_/wantDC_ en este frame
+        return; //el salto ya cambio a Pacman; no tocar wantDR_/wantDC_ este frame
     }
 
     wantDR_ = dr; wantDC_ = dc;
@@ -569,4 +598,16 @@ void GamePlay::updateGhostSound(){
 void GamePlay::stopGhostSound(){
     Constants::ghostMoveSound.stop();
     Constants::ghostScaredSound.stop();
+}
+
+
+void GamePlay::beginEnding(){
+    if (ending_) 
+        return;
+
+    ending_ = true;
+    endClock_.restart();
+    stopGhostSound(); 
+    if (game_.getState() == GameState::WIN)
+        Constants::victorySound.play();
 }

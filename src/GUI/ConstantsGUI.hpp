@@ -68,6 +68,9 @@ namespace Constants{
 
     inline sf::SoundBuffer deathBuffer{"./Resource/pacman_death.wav"};
     inline sf::Sound deathSound{deathBuffer};
+
+    inline sf::SoundBuffer victoryBuffer{"./Resource/pacman_victory.wav"};
+    inline sf::Sound victorySound{victoryBuffer};
 }
     
 

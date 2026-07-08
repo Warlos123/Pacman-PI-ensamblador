@@ -58,7 +58,7 @@ public:
 private:
     void startGame(){
         gamePlay.reset(); // libera el SerialReader (y el puerto COM) del juego anterior antes de crear el nuevo
-        gamePlay = std::make_unique<GamePlay>(Constants::font, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT);
+        gamePlay = std::make_unique<GamePlay>(Constants::font, Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT, scoreboard_.highScore());
         state = ScreenState::PLAYING;
     }
 
@@ -166,8 +166,6 @@ private:
         sf::Vector2u ts = Constants::backGround.getSize();
         bg.setScale({Constants::WINDOW_WIDTH / float(ts.x), Constants::WINDOW_HEIGHT / float(ts.y)});
         window.draw(bg);
-
-        drawCentered(Constants::hudFont, "HIGH SCORE  " + std::to_string(scoreboard_.highScore()), 28, 30.f, sf::Color::White);
         playButton.draw(window);
     }
 
@@ -177,8 +175,9 @@ private:
 
         drawCentered(Constants::font, win ? WIN_TEXT : LOSE_TEXT, END_SIZE, 90.f, win ? sf::Color::Green : sf::Color::Red);
         drawCentered(Constants::hudFont, "SCORE  " + std::to_string(score), SCORE_SIZE, 190.f, sf::Color::White);
-        drawCentered(Constants::hudFont, "HIGH SCORE  " + std::to_string(scoreboard_.highScore()), SCORE_SIZE, 240.f, sf::Color(255, 235, 0));
-
+        int shownHigh = std::max(scoreboard_.highScore(), score);
+        drawCentered(Constants::hudFont, "HIGH SCORE  " + std::to_string(shownHigh), SCORE_SIZE, 240.f, sf::Color(255, 235, 0));
+        
         if(!nameSaved_){
             if(score > 0 && score >= scoreboard_.highScore())
                 drawCentered(Constants::font, "NUEVO RECORD!", 30, 300.f, sf::Color(255, 235, 0));
