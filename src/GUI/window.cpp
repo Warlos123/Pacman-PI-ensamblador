@@ -8,11 +8,12 @@
 #include "Scoreboard/Scoreboard.hpp"
 
 namespace {
-    const std::string PLAY_LABEL   = "Jugar";
+    const std::string PLAY_LABEL   = "START";
     const std::string WIN_TEXT     = "GANASTE!";
     const std::string LOSE_TEXT    = "GAME OVER";
     const std::string SAVE_HINT    = "Escribe tu nombre y presiona Enter";
     const std::string REPLAY_HINT    = "Enter: jugar de nuevo    Esc: salir";
+    const std::string TITLE_TEXT  = "PACMAN";
 
     constexpr unsigned int FPS_LIMIT  = 60;
     constexpr unsigned int END_SIZE   = 56;
@@ -20,6 +21,10 @@ namespace {
     constexpr unsigned int NAME_SIZE  = 34;
     constexpr unsigned int LIST_SIZE  = 24;
     constexpr unsigned int HINT_SIZE  = 22;
+    constexpr unsigned int TITLE_SIZE = 96;
+
+    constexpr float TITLE_Y = 200.f;
+    constexpr float BUTTON_Y = 420.f; 
 
     constexpr std::size_t  MAX_NAME_LEN = 12;
 
@@ -40,9 +45,9 @@ public:
     std::string playerName_;
     bool nameSaved_ = false;
 
-    Button playButton{Constants::font, PLAY_LABEL, BUTTON_SIZE,
-        {CENTER_X - BUTTON_SIZE.x / 2.f, CENTER_Y - BUTTON_SIZE.y / 2.f},
-        Constants::BUTTON_NOMRAL, Constants::BUTTON_HOVER};
+    Button playButton{Constants::hudFont, PLAY_LABEL, BUTTON_SIZE,
+        {CENTER_X - BUTTON_SIZE.x / 2.f, BUTTON_Y},
+        sf::Color::Black, sf::Color(30, 30, 30)};
 
     int run(){
         window.setFramerateLimit(FPS_LIMIT);
@@ -134,13 +139,14 @@ private:
     }
 
     void render(){
-       if(state == ScreenState::GAMEOVER) 
+        if(state == ScreenState::MAINSCREEN || state == ScreenState::GAMEOVER)
             window.clear(sf::Color::Black);
 
         else
             window.clear(BACKGROUND_COLOR);
 
-        if(state == ScreenState::MAINSCREEN)    
+
+        if(state == ScreenState::MAINSCREEN)
             drawMainScreen();
 
         else if(state == ScreenState::PLAYING){ 
@@ -162,10 +168,7 @@ private:
 
 
     void drawMainScreen(){
-        sf::Sprite bg(Constants::backGround);
-        sf::Vector2u ts = Constants::backGround.getSize();
-        bg.setScale({Constants::WINDOW_WIDTH / float(ts.x), Constants::WINDOW_HEIGHT / float(ts.y)});
-        window.draw(bg);
+        drawCentered(Constants::font, TITLE_TEXT, TITLE_SIZE, TITLE_Y, sf::Color(255, 235, 0));
         playButton.draw(window);
     }
 

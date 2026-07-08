@@ -30,6 +30,7 @@ private:
     bool pelletEaten_ = false;
     bool jumpWallEaten_ = false;
     bool ghostEaten_ = false; 
+    bool jumpWallUsed_ = false;
 
     void populate(const std::unordered_set<int>& reserved);
     void checkGhostCollision();
@@ -50,4 +51,5 @@ public:
     bool consumePelletEaten();
     bool consumeJumpWallEaten();
     bool consumeGhostEaten();    
+    bool consumeJumpWallUsed();
 };

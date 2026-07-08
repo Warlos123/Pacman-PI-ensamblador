@@ -213,6 +213,7 @@ bool Game::useJumpWall(int targetNode){
         
     pacman_.setNodeIndex(targetNode);
     pacman_.removePowerUp(PowerUpType::JUMP_WALL);
+    jumpWallUsed_ = true;
     checkGhostCollision();
     return true;
 }
@@ -268,5 +269,12 @@ bool Game::consumeJumpWallEaten(){
 bool Game::consumeGhostEaten(){
     bool v = ghostEaten_;
     ghostEaten_ = false;
+    return v;
+}
+
+
+bool Game::consumeJumpWallUsed(){
+    bool v = jumpWallUsed_;
+    jumpWallUsed_ = false;
     return v;
 }

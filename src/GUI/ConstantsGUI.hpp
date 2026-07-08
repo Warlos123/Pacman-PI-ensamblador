@@ -18,6 +18,7 @@ namespace Constants{
     inline sf::Font    font{"./Resource/PAC-FONT.TTF"};
     inline sf::Texture backGround{"./Resource/MainScreen.png"};
     inline sf::Font hudFont{"./Resource/HUD-FONT.ttf"};
+    inline sf::Texture jumpWallTexture{"./Resource/jump_wall.png"};
     
     inline sf::Music       introMusic{"./Resource/pacman_intro.ogg"};
 
@@ -71,6 +72,23 @@ namespace Constants{
 
     inline sf::SoundBuffer victoryBuffer{"./Resource/pacman_victory.wav"};
     inline sf::Sound victorySound{victoryBuffer};
+
+
+    inline sf::SoundBuffer jumpWallBuffer{"./Resource/pacman_jumpwall.wav"};
+    constexpr int JUMP_WALL_VOICES = 2;
+    inline std::vector<sf::Sound> makeJumpWallVoices(){
+        std::vector<sf::Sound> v;
+        for (int i = 0; i < JUMP_WALL_VOICES; i++)
+            v.emplace_back(jumpWallBuffer);
+        return v;
+    }
+    
+    inline std::vector<sf::Sound> jumpWallVoices = makeJumpWallVoices();
+    inline void playJumpWall(){
+        static size_t next = 0;
+        jumpWallVoices[next].play();
+        next = (next + 1) % jumpWallVoices.size();
+    }
 }
     
 

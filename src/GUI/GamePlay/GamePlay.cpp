@@ -199,6 +199,9 @@ void GamePlay::update(){
             Constants::playWaka();
         if (game_.consumeJumpWallEaten())
             Constants::playWaka();
+
+        if (game_.consumeJumpWallUsed())
+            Constants::playJumpWall();
     }
     
 
@@ -328,11 +331,13 @@ void GamePlay::drawEntities(sf::RenderWindow& window){
             window.draw(dot);
         }
         else if (cell.powerUp == PowerUpType::JUMP_WALL){
-            float s = cellSize_ * 0.30f;
-            sf::RectangleShape sq({s, s});
-            sq.setOrigin({s/2.f, s/2.f}); sq.setPosition(c);
-            sq.setFillColor(JUMP_WALL_COLOR);
-            window.draw(sq);
+            float s = cellSize_ * 1.00f; 
+            sf::Sprite spr(Constants::jumpWallTexture);
+            sf::Vector2u ts = Constants::jumpWallTexture.getSize();
+            spr.setOrigin({ts.x / 2.f, ts.y / 2.f});           
+            spr.setScale({s / float(ts.x), s / float(ts.y)});  
+            spr.setPosition(c);                                 
+            window.draw(spr);
         }
         else if (cell.hasPellet){
             float r = cellSize_ * 0.08f;
