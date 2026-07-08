@@ -72,4 +72,5 @@ public:
     void updateGhostSound();
     void stopGhostSound(); 
     void beginEnding();
+    int getLifeBonus() const;
 };

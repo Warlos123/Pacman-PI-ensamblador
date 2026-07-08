@@ -9,7 +9,7 @@
 
 namespace {
     const std::string PLAY_LABEL   = "START";
-    const std::string WIN_TEXT     = "GANASTE!";
+    const std::string WIN_TEXT     = "YOU WIN!";
     const std::string LOSE_TEXT    = "GAME OVER";
     const std::string SAVE_HINT    = "Escribe tu nombre y presiona Enter";
     const std::string REPLAY_HINT    = "Enter: jugar de nuevo    Esc: salir";
@@ -104,7 +104,8 @@ private:
                     }
                     if(const auto* kp = event->getIf<sf::Event::KeyPressed>()){
                         if(kp->code == sf::Keyboard::Key::Enter){
-                            scoreboard_.add(playerName_, gamePlay ? gamePlay->getScore() : 0);
+                            int finalScore = gamePlay ? gamePlay->getScore() + gamePlay->getLifeBonus() : 0;
+                            scoreboard_.add(playerName_, finalScore);
                             nameSaved_ = true;
                         }
                     }
@@ -173,16 +174,36 @@ private:
     }
 
     void drawGameOver(){
-        bool win = gamePlay && gamePlay->getState() == GameState::WIN;
-        int  score = gamePlay ? gamePlay->getScore() : 0;
+        bool win   = gamePlay && gamePlay->getState() == GameState::WIN;
+        int  score = gamePlay ? gamePlay->getScore() : 0;   
+        int  bonus = win ? gamePlay->getLifeBonus() : 0;   
+        int  finalScore = score + bonus;                   
 
         drawCentered(Constants::font, win ? WIN_TEXT : LOSE_TEXT, END_SIZE, 90.f, win ? sf::Color::Green : sf::Color::Red);
-        drawCentered(Constants::hudFont, "SCORE  " + std::to_string(score), SCORE_SIZE, 190.f, sf::Color::White);
-        int shownHigh = std::max(scoreboard_.highScore(), score);
+
+        {
+            std::string scoreStr = "SCORE  " + std::to_string(score);
+            std::string bonusStr = bonus > 0 ? ("   +" + std::to_string(bonus)) : "";
+
+            Text scoreText(Constants::hudFont, scoreStr, SCORE_SIZE, {0.f, 0.f}, sf::Color::White);
+            Text bonusText(Constants::hudFont, bonusStr, SCORE_SIZE, {0.f, 0.f}, sf::Color(255, 235, 0));
+
+            float total  = scoreText.getWidth() + bonusText.getWidth();
+            float startX = (Constants::WINDOW_WIDTH - total) / 2.f;
+            float y      = 190.f;
+
+            scoreText.setPosition({startX, y});
+            bonusText.setPosition({startX + scoreText.getWidth(), y});
+
+            scoreText.draw(window);
+            if(bonus > 0) bonusText.draw(window);
+        }
+
+        int shownHigh = std::max(scoreboard_.highScore(), finalScore);
         drawCentered(Constants::hudFont, "HIGH SCORE  " + std::to_string(shownHigh), SCORE_SIZE, 240.f, sf::Color(255, 235, 0));
-        
+
         if(!nameSaved_){
-            if(score > 0 && score >= scoreboard_.highScore())
+            if(finalScore > 0 && finalScore >= scoreboard_.highScore())
                 drawCentered(Constants::font, "NUEVO RECORD!", 30, 300.f, sf::Color(255, 235, 0));
 
             drawCentered(Constants::hudFont, "Nombre: " + playerName_ + "_", NAME_SIZE, 360.f, sf::Color::White);

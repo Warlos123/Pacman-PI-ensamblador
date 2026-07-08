@@ -144,6 +144,11 @@ bool Game::movePacman(int targetNode){
 
         if(pelletsRemaining_ == 0){
             state_ = GameState::WIN;
+
+            for(int i = 1; i < pacman_.getLives(); i++){
+                lifeBonus_ += LIVES_POINTS;
+            }
+
             return true;
         }
     }
@@ -277,4 +282,8 @@ bool Game::consumeJumpWallUsed(){
     bool v = jumpWallUsed_;
     jumpWallUsed_ = false;
     return v;
+}
+
+int Game::getLifeBonus() const{
+    return lifeBonus_;
 }

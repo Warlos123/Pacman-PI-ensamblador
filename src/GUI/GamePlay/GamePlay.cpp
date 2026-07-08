@@ -616,3 +616,7 @@ void GamePlay::beginEnding(){
     if (game_.getState() == GameState::WIN)
         Constants::victorySound.play();
 }
+
+int GamePlay::getLifeBonus() const{
+    return game_.getLifeBonus();
+}

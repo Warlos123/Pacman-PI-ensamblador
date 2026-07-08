@@ -26,6 +26,7 @@ constexpr int PACMAN_LIVES = 3;
 constexpr int PELLET_POINTS = 10; 
 constexpr int POWER_PELLET_POINTS = 50; 
 constexpr int GHOST_POINTS = 200; 
+constexpr int LIVES_POINTS = 500;
 
 //GHOST
 constexpr int GHOST_BFS_RATE = 50; //Out of 100
